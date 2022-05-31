@@ -1,3 +1,5 @@
+import React, { useState } from 'react';
+
 import styled from '@emotion/styled';
 import { css } from '@emotion/react';
 
@@ -94,21 +96,46 @@ const Redo = styled(RedoIcon)`
     color: #787878;
 `;
 
-const weather = () => (
-    <Container>
-        <WeatherCard>
-            <Location>台北市</Location>
-            <Description>晴時多雲</Description>
-            <CurrentWeather>
-                <Temperature>23<Celsius>°C</Celsius></Temperature>
-                {/* <img src={SunDay} alt="sun day" /> */}
-                <SunDay />
-            </CurrentWeather>
-            <AirFlow><AirFlowIcon />23 m/h</AirFlow>
-            <Rain><RainIcon />48%</Rain>
-            <Redo />
-        </WeatherCard>
-    </Container>
-)
+const Weather = () => {
+    const [weatherInfo, SetWeatherInfo] = useState ({
+        observationTime: '2019-10-02 22:10:00',
+        locationName: '臺北市',
+        description: '多雲時晴',
+        temperature: 27.5,
+        windSpeed: 0.3,
+        humid: 0.88,
+    });
 
-export default weather
+    return (
+        <Container>
+            <WeatherCard>
+                <Location>{ weatherInfo.locationName }</Location>
+                <Description>
+                    {new Intl.DateTimeFormat('zh-TW', {
+                        hour: 'numeric',
+                        minute: 'numeric',
+                    }).format(new Date(weatherInfo.observationTime))} 
+                    { ' ' }
+                    { weatherInfo.description }</Description>
+                <CurrentWeather>
+                    <Temperature>
+                        { Math.round(weatherInfo.temperature) }
+                        <Celsius>°C</Celsius>
+                    </Temperature>
+                    <SunDay />
+                </CurrentWeather>
+                <AirFlow>
+                    <AirFlowIcon />
+                    { weatherInfo.windSpeed } m/h
+                </AirFlow>
+                <Rain>
+                    <RainIcon />
+                    { weatherInfo.humid*100 } %
+                </Rain>
+                <Redo />
+            </WeatherCard>
+        </Container>
+    )
+};
+
+export default Weather
