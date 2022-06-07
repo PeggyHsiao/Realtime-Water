@@ -86,14 +86,22 @@ const Rain = styled.div`
 const SunDay = styled(Sun)`
     flex-basis: 30%;
 `;
-const Redo = styled(RedoIcon)`
-    width: 20px;
-    height: 20px;
+
+const RedoDiv = styled.div`
+    color: #787878;
+    display: flex;
+    justify-content: flex-end;
     position: absolute;
     right: 15px;
     bottom: 15px;
+`;
+
+const Redo = styled(RedoIcon)`
+    width: 20px;
+    height: 20px;
     cursor: pointer;
     color: #787878;
+    margin-left: 10px;
 `;
 
 const Weather = () => {
@@ -106,17 +114,36 @@ const Weather = () => {
         humid: 0.88,
     });
 
+    const handleClick = () => {
+        fetch("https://opendata.cwb.gov.tw/api/v1/rest/datastore/O-A0003-001?Authorization=CWB-46404969-9772-4056-A95B-38D3ADA61C48&stationId=466920")
+        .then(res => res.json())
+        .then(data => {
+            const info = data.records.location[0];
+
+            const weatherElements = info.weatherElement.reduce((neededElements, item) => {
+                if(['WDSD', 'TEMP', 'HUMD'].includes(item.elementName)) {
+                    neededElements[item.elementName] = item.elementValue;
+                }
+                return neededElements
+            }, {})
+            
+
+            SetWeatherInfo({
+                observationTime: info.time.obsTime,
+                locationName: info.locationName,
+                description: '多雲時晴',
+                temperature: weatherElements.TEMP,
+                windSpeed: weatherElements.WDSD,
+                humid: weatherElements.HUMD,
+            })
+        })
+    };
+
     return (
         <Container>
             <WeatherCard>
                 <Location>{ weatherInfo.locationName }</Location>
-                <Description>
-                    {new Intl.DateTimeFormat('zh-TW', {
-                        hour: 'numeric',
-                        minute: 'numeric',
-                    }).format(new Date(weatherInfo.observationTime))} 
-                    { ' ' }
-                    { weatherInfo.description }</Description>
+                <Description>{ weatherInfo.description }</Description>
                 <CurrentWeather>
                     <Temperature>
                         { Math.round(weatherInfo.temperature) }
@@ -130,9 +157,15 @@ const Weather = () => {
                 </AirFlow>
                 <Rain>
                     <RainIcon />
-                    { weatherInfo.humid*100 } %
+                    { Math.round(weatherInfo.humid*100) } %
                 </Rain>
-                <Redo />
+                <RedoDiv>
+                    最後觀測時間: {new Intl.DateTimeFormat('zh-TW', {
+                        hour: 'numeric',
+                        minute: 'numeric',
+                    }).format(new Date(weatherInfo.observationTime))} { ' ' }
+                    <Redo onClick={handleClick} />
+                </RedoDiv>
             </WeatherCard>
         </Container>
     )
