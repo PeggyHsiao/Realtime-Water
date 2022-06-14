@@ -118,12 +118,25 @@ const Weather = () => {
     });
 
     useEffect(() => { 
-        fetchCurrentWeather(); 
-        fetchProspectiveWeather();
-    }, [])
+        const fetchAllData = async () => {
+            const [weatherInfo, prospectiveInfo] = await Promise.all([
+                fetchProspectiveWeather(),
+                fetchCurrentWeather(),
+            ]);
+
+            SetWeatherInfo({
+                ...weatherInfo,
+                ...prospectiveInfo,
+            })
+    
+        }
+
+        fetchAllData();
+
+    }, []);
 
     const fetchProspectiveWeather = () => {
-        fetch("https://opendata.cwb.gov.tw/api/v1/rest/datastore/F-C0032-001?Authorization=CWB-46404969-9772-4056-A95B-38D3ADA61C48&locationName=%E8%87%BA%E5%8C%97%E5%B8%82")
+        return fetch("https://opendata.cwb.gov.tw/api/v1/rest/datastore/F-C0032-001?Authorization=CWB-46404969-9772-4056-A95B-38D3ADA61C48&locationName=%E8%87%BA%E5%8C%97%E5%B8%82")
         .then((res) => res.json())
         .then((data) => {
             const prospectiveInfo = data.records.location[0];
@@ -135,18 +148,17 @@ const Weather = () => {
                 return neededElements;
             }, {});
 
-            SetWeatherInfo(prevState => ({
-                ...prevState,
+            return {
                 description: weatherElements.Wx.parameterName,
                 weatherCode: weatherElements.Wx.parameterValue,
                 rainPossibility: weatherElements.PoP.parameterName,
                 comfortability: weatherElements.CI.parameterName,
-            }));
+            };
         })
     }
 
     const fetchCurrentWeather = () => {
-        fetch("https://opendata.cwb.gov.tw/api/v1/rest/datastore/O-A0003-001?Authorization=CWB-46404969-9772-4056-A95B-38D3ADA61C48&stationId=466920")
+        return fetch("https://opendata.cwb.gov.tw/api/v1/rest/datastore/O-A0003-001?Authorization=CWB-46404969-9772-4056-A95B-38D3ADA61C48&stationId=466920")
         .then(res => res.json())
         .then(data => {
             const info = data.records.location[0];
@@ -158,15 +170,13 @@ const Weather = () => {
                 return neededElements
             }, {});
             
-
-            SetWeatherInfo(prevState => ({
-                ...prevState,
+            return {
                 observationTime: info.time.obsTime,
                 locationName: info.locationName,
                 temperature: weatherElements.TEMP,
                 windSpeed: weatherElements.WDSD,
                 humid: weatherElements.HUMD,
-            }))
+            };
         })
     };
 
