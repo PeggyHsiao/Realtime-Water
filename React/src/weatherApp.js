@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import styled from '@emotion/styled';
 import { css } from '@emotion/react';
@@ -106,15 +106,46 @@ const Redo = styled(RedoIcon)`
 
 const Weather = () => {
     const [weatherInfo, SetWeatherInfo] = useState ({
-        observationTime: '2019-10-02 22:10:00',
-        locationName: '臺北市',
-        description: '多雲時晴',
-        temperature: 27.5,
-        windSpeed: 0.3,
-        humid: 0.88,
+        observationTime: new Date(),
+        locationName: '',
+        humid: 0,
+        temperature: 0,
+        windSpeed: 0,
+        description: '',
+        weatherCode: 0,
+        rainPossibility: 0,
+        comfortability: '',
     });
 
-    const handleClick = () => {
+    useEffect(() => { 
+        fetchCurrentWeather(); 
+        fetchProspectiveWeather();
+    }, [])
+
+    const fetchProspectiveWeather = () => {
+        fetch("https://opendata.cwb.gov.tw/api/v1/rest/datastore/F-C0032-001?Authorization=CWB-46404969-9772-4056-A95B-38D3ADA61C48&locationName=%E8%87%BA%E5%8C%97%E5%B8%82")
+        .then((res) => res.json())
+        .then((data) => {
+            const prospectiveInfo = data.records.location[0];
+
+            const weatherElements = prospectiveInfo.weatherElement.reduce((neededElements, item) => {
+                if (['Wx', 'PoP', 'CI'].includes(item.elementName)) {
+                    neededElements[item.elementName] = item.time[0].parameter;
+                }
+                return neededElements;
+            }, {});
+
+            SetWeatherInfo(prevState => ({
+                ...prevState,
+                description: weatherElements.Wx.parameterName,
+                weatherCode: weatherElements.Wx.parameterValue,
+                rainPossibility: weatherElements.PoP.parameterName,
+                comfortability: weatherElements.CI.parameterName,
+            }));
+        })
+    }
+
+    const fetchCurrentWeather = () => {
         fetch("https://opendata.cwb.gov.tw/api/v1/rest/datastore/O-A0003-001?Authorization=CWB-46404969-9772-4056-A95B-38D3ADA61C48&stationId=466920")
         .then(res => res.json())
         .then(data => {
@@ -125,17 +156,17 @@ const Weather = () => {
                     neededElements[item.elementName] = item.elementValue;
                 }
                 return neededElements
-            }, {})
+            }, {});
             
 
-            SetWeatherInfo({
+            SetWeatherInfo(prevState => ({
+                ...prevState,
                 observationTime: info.time.obsTime,
                 locationName: info.locationName,
-                description: '多雲時晴',
                 temperature: weatherElements.TEMP,
                 windSpeed: weatherElements.WDSD,
                 humid: weatherElements.HUMD,
-            })
+            }))
         })
     };
 
@@ -143,7 +174,7 @@ const Weather = () => {
         <Container>
             <WeatherCard>
                 <Location>{ weatherInfo.locationName }</Location>
-                <Description>{ weatherInfo.description }</Description>
+                <Description>{ weatherInfo.description } { weatherInfo.comfortability }</Description>
                 <CurrentWeather>
                     <Temperature>
                         { Math.round(weatherInfo.temperature) }
@@ -157,14 +188,17 @@ const Weather = () => {
                 </AirFlow>
                 <Rain>
                     <RainIcon />
-                    { Math.round(weatherInfo.humid*100) } %
+                    { Math.round(weatherInfo.rainPossibility) } %
                 </Rain>
                 <RedoDiv>
                     最後觀測時間: {new Intl.DateTimeFormat('zh-TW', {
                         hour: 'numeric',
                         minute: 'numeric',
                     }).format(new Date(weatherInfo.observationTime))} { ' ' }
-                    <Redo onClick={handleClick} />
+                    <Redo onClick={() => {
+                        fetchCurrentWeather();
+                        fetchProspectiveWeather();
+                    }} />
                 </RedoDiv>
             </WeatherCard>
         </Container>
